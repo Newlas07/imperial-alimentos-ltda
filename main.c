@@ -106,7 +106,19 @@ int totalProdutos = 0;
     }
 
     void listaProdutos() {
-        printf("\nModulo de listagem de produtos. \n");
+        if (totalProdutos == 0) {
+            printf("\nNenhum produto cadastrado.\n");
+            return;
+        }
+
+        printf("\n=== Produtos cadastrados ===\n");
+
+        for (int i = 0; i < totalProdutos; i++) {
+            printf("\nCodigo: %d\n", produtos[i].codigo);
+            printf("Nome: %s\n", produtos[i].nome);
+            printf("Quantidade: %d\n", produtos[i].quantidade);
+            printf("Preco: R$ %.2f\n", produtos[i].preco);
+        }
     }
 
     void consultaProduto() {
