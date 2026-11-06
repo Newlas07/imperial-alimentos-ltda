@@ -37,8 +37,8 @@ int totalProdutos = 0;
         printf("\n3  - consulta de Produtos");
         printf("\n4  - atualizar estoque");
         printf("\n5  - Registrar entrada de produtos");
-        printf("\n6  - Registrar saída de produtos");
-        printf("\n7  - Relatório de estoque");
+        printf("\n6  - Registrar saida de produtos");
+        printf("\n7  - Relatorio de estoque");
         printf("\n0  -    Sair");
 
         printf("\n\nEscolha uma opcao: ");
@@ -122,23 +122,165 @@ int totalProdutos = 0;
     }
 
     void consultaProduto() {
-        printf("\nModulo de consulta de produtos. \n");
+        if(totalProdutos == 0) {
+            printf("\nNenhum produto cadastrado.\n");
+            return;
+        }
+
+        int codigoBusca;
+        int encontrado = 0;
+
+        printf("\nDigite o codigo do produto para consulta: ");
+        scanf("%d", &codigoBusca);
+
+        for (int i = 0; i < totalProdutos; i++) {
+            if (produtos[i].codigo == codigoBusca) {
+                printf("\nProduto encontrado:\n");
+                printf("Codigo: %d\n", produtos[i].codigo);
+                printf("Nome: %s\n", produtos[i].nome);
+                printf("Quantidade: %d\n", produtos[i].quantidade);
+                printf("Preco: R$ %.2f\n", produtos[i].preco);
+                encontrado = 1;
+                break;
+            }
+        }
+        if (!encontrado) {
+            printf("\nProduto nao encontrado.\n");
+        }
     }
 
     void atualizarEstoque() {
+        if(totalProdutos == 0) {
+            printf("\nNenhum produto cadastrado.\n");
+            return;
+        }
+        
+        int codigoBusca;
+        int novaQuantidade;
+        int encontrado = 0;
+
+        printf("\nDigite o codigo do produto para atualizar o estoque: ");
+        scanf("%d", &codigoBusca);
+
+        for (int i = 0; i < totalProdutos; i++) {
+            if (produtos[i].codigo == codigoBusca) {
+                printf("Quantidade atual: %d\n", produtos[i].quantidade);
+                printf("Digite a nova quantidade: ");
+                scanf("%d", &novaQuantidade);
+
+                if (novaQuantidade < 0) {
+                    printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
+                } else {
+                    produtos[i].quantidade = novaQuantidade;
+                    printf("\nEstoque atualizado com sucesso!\n");
+                }
+                encontrado = 1;
+                break;
+            }
+        }
+        if (!encontrado) {
+            printf("\nProduto nao encontrado.\n");
+        }
+
         printf("\nModulo de atualizacao de estoque. \n");
     }
 
     void registrarEntrada() {
+        if(totalProdutos == 0) {
+            printf("\nNenhum produto cadastrado.\n");
+            return;
+        }
+
+        int codigoBusca;
+        int quantidadeEntrada;
+        int encontrado = 0;
+
+        printf("\nDigite o codigo do produto para registrar a entrada: ");
+        scanf("%d", &codigoBusca);
+
+        for (int i = 0; i < totalProdutos; i++) {
+            if (produtos[i].codigo == codigoBusca) {
+                printf("Quantidade atual: %d\n", produtos[i].quantidade);
+                printf("Digite a quantidade de entrada: ");
+                scanf("%d", &quantidadeEntrada);
+
+                if (quantidadeEntrada < 0) {
+                    printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
+                } else {
+                    produtos[i].quantidade += quantidadeEntrada;
+                    printf("\nEntrada registrada com sucesso!. Novo Estoque: %d\n", produtos[i].quantidade);
+                }
+                encontrado = 1;
+                break;
+            }
+        }
+        if (!encontrado) {
+            printf("\nProduto nao encontrado.\n");
+        }
         printf("\nModulo de registro de entrada de produtos. \n");
     }
 
     void registrarSaida() {
-        printf("\nModulo de registro de saida de produtos. \n");
+        if(totalProdutos == 0) {
+            printf("\nNenhum produto cadastrado.\n");
+            return;
+        }
+
+        int codigoBusca;
+        int quantidadeSaida;
+        int encontrado = 0;
+
+        printf("\nDigite o codigo do produto para registrar a saida: ");
+        scanf("%d", &codigoBusca);
+
+        for (int i = 0; i < totalProdutos; i++) {
+            if (produtos[i].codigo == codigoBusca) {
+                printf("Quantidade atual: %d\n", produtos[i].quantidade);
+                printf("Digite a quantidade de saida: ");
+                scanf("%d", &quantidadeSaida);
+
+                if (quantidadeSaida <= 0) {
+                    printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
+                } else if (quantidadeSaida > produtos[i].quantidade) {
+                    printf("\nQuantidade insuficiente em estoque. Estoque atual: %d\n", produtos[i].quantidade);
+                } else {
+                    produtos[i].quantidade -= quantidadeSaida;
+                    printf("\nSaida registrada com sucesso!. Novo Estoque: %d\n", produtos[i].quantidade);
+                }
+                encontrado = 1;
+                break;
+            }
+        }
+        if (!encontrado) {
+            printf("\nProduto nao encontrado.\n");
+        }
+        
     }
 
     void relatorioEstoque() {
-        printf("\nModulo de relatorio de estoque. \n");
+        if (totalProdutos == 0) {
+            printf("\nNenhum produto cadastrado.\n");
+            return;
+        }
+
+        int totalUnidades = 0;
+        float valorTotalEstoque = 0.0;
+
+        printf("\n=== Relatorio de Estoque ===\n");
+
+        for (int i = 0; i < totalProdutos; i++) {
+            printf("\nCodigo: %d\n", produtos[i].codigo);
+            printf("Nome: %s\n", produtos[i].nome);
+            printf("Quantidade: %d\n", produtos[i].quantidade);
+            printf("Preco: R$ %.2f\n", produtos[i].preco);
+
+            totalUnidades += produtos[i].quantidade;
+            valorTotalEstoque += produtos[i].quantidade * produtos[i].preco;
+        }
+        printf("\nTipos de produtos cadastrados: %d\n", totalProdutos);
+        printf("Total de unidades em estoque: %d\n", totalUnidades);
+        printf("Valor total do estoque: R$ %.2f\n", valorTotalEstoque);
+        
     }
 
 
