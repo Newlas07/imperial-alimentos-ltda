@@ -27,14 +27,14 @@ int movimentacoes[MAX_PRODUTOS][2] = {0};
 int totalProdutos = 0;
 
  //Prototipos das funcoes
- void cadastroProduto();
- void listaProdutos();
- void consultaProduto();
- void atualizarEstoque();
- void registrarEntrada();
- void registrarSaida();
- void relatorioEstoque();
- void carregarProdutos();
+ void cadastroProduto(void);
+ void listaProdutos(void);
+ void consultaProduto(void);
+ void atualizarEstoque(void);
+ void registrarEntrada(void);
+ void registrarSaida(void);
+ void relatorioEstoque(void);
+ void carregarProdutos(void);
  int salvarProdutos(void);
  int lerLinha(FILE *entrada, char *linha, size_t tamanho);
  int lerInteiro(int *valor);
@@ -46,7 +46,7 @@ int totalProdutos = 0;
  int lerCampoPreco(char **cursor, char separador, float *valor);
 
  /* Algoritmo principal: exibe o menu repetidamente e chama a funcao escolhida. */
- int main() {
+ int main(void) {
 
 
      int opcao;
@@ -116,7 +116,7 @@ int totalProdutos = 0;
     //Funcoes iniciais
 
     /* Cadastra os dados de um produto na proxima posicao livre do vetor. */
-    void cadastroProduto() {
+    void cadastroProduto(void) {
         if (totalProdutos >= MAX_PRODUTOS) {
             printf("\nLimite de produtos atingido.\n");
             return;
@@ -177,7 +177,7 @@ int totalProdutos = 0;
     }
 
     /* Percorre o vetor e mostra os dados de todos os produtos cadastrados. */
-    void listaProdutos() {
+    void listaProdutos(void) {
         if (totalProdutos == 0) {
             printf("\nNenhum produto cadastrado.\n");
             return;
@@ -194,7 +194,7 @@ int totalProdutos = 0;
     }
 
     /* Busca pelo codigo informado e mostra os dados quando encontra o produto. */
-    void consultaProduto() {
+    void consultaProduto(void) {
         if(totalProdutos == 0) {
             printf("\nNenhum produto cadastrado.\n");
             return;
@@ -226,7 +226,7 @@ int totalProdutos = 0;
     }
 
     /* Busca o produto e substitui a quantidade pelo novo valor informado. */
-    void atualizarEstoque() {
+    void atualizarEstoque(void) {
         if(totalProdutos == 0) {
             printf("\nNenhum produto cadastrado.\n");
             return;
@@ -275,7 +275,7 @@ int totalProdutos = 0;
     }
 
     /* Busca o produto, valida a quantidade e soma a entrada ao estoque e a matriz. */
-    void registrarEntrada() {
+    void registrarEntrada(void) {
         if(totalProdutos == 0) {
             printf("\nNenhum produto cadastrado.\n");
             return;
@@ -327,7 +327,7 @@ int totalProdutos = 0;
     }
 
     /* Busca o produto, impede saida acima do estoque e registra a saida na matriz. */
-    void registrarSaida() {
+    void registrarSaida(void) {
         if(totalProdutos == 0) {
             printf("\nNenhum produto cadastrado.\n");
             return;
@@ -380,7 +380,7 @@ int totalProdutos = 0;
     }
 
     /* Percorre os produtos, mostra saldo e movimentacoes, e calcula os totais gerais. */
-    void relatorioEstoque() {
+    void relatorioEstoque(void) {
         if (totalProdutos == 0) {
             printf("\nNenhum produto cadastrado.\n");
             return;
@@ -457,7 +457,7 @@ int totalProdutos = 0;
         return 1;
     }
 
-    void carregarProdutos() {
+    void carregarProdutos(void) {
         FILE *arquivo = fopen("produtos.txt", "r");
 
         /* Na primeira execucao, o arquivo ainda nao existe. */
