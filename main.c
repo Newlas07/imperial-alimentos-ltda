@@ -26,6 +26,7 @@ int totalProdutos = 0;
  void relatorioEstoque();
  void carregarProdutos();
  void salvarProdutos();
+ void limparEntrada();
 
  /* Algoritmo principal: exibe o menu repetidamente e chama a funcao escolhida. */
  int main() {
@@ -51,7 +52,14 @@ int totalProdutos = 0;
         printf("\n0  -    Sair");
 
         printf("\n\nEscolha uma opcao: ");
-        scanf("%d", &opcao);
+        if (scanf("%d", &opcao) != 1) {
+    limparEntrada();
+    printf("\nDigite uma opcao usando numeros.\n");
+    opcao = -1;
+    continue;
+}
+
+limparEntrada();
 
         switch (opcao) {
             case 1:
@@ -99,16 +107,49 @@ int totalProdutos = 0;
         Produto *produto = &produtos[totalProdutos];
 
         printf("\nCodigo: ");
-        scanf("%d", &produto->codigo);
+        if (scanf("%d", &produto->codigo) != 1) {
+    limparEntrada();
+    printf("\no codigo deve ser um numero inteiro.\n");
+    return;
+}
+limparEntrada();
+        if (produto->codigo <= 0) {
+            printf("\nO codigo deve ser maior que zero.\n");
+            return;
+        }
+        for (int i = 0; i < totalProdutos; i++) {
+    if (produtos[i].codigo == produto->codigo) {
+        printf("\nEsse codigo ja esta cadastrado.\n");
+        return;
+    }
+}
 
         printf("Nome: ");
         scanf(" %49[^\n]", produto->nome);
 
         printf("Quantidade: ");
-        scanf("%d", &produto->quantidade);
+        if (scanf("%d", &produto->quantidade) != 1) {
+    limparEntrada();
+    printf("\na quantidade deve ser um numero inteiro.\n");
+    return;
+}
+limparEntrada();
+        if (produto->quantidade < 0) {
+    printf("\nA quantidade nao pode ser negativa.\n");
+    return;
+}
 
         printf("Preco: ");
-        scanf("%f", &produto->preco);
+        if (scanf("%f", &produto->preco) != 1) {
+    limparEntrada();
+    printf("\no preco deve ser um numero.\n");
+    return;
+}
+limparEntrada();
+        if (produto->preco < 0) {
+    printf("\nO preco nao pode ser negativo.\n");
+    return;
+}
 
         totalProdutos++;
         salvarProdutos();
@@ -144,7 +185,12 @@ int totalProdutos = 0;
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para consulta: ");
-        scanf("%d", &codigoBusca);
+        if (scanf("%d", &codigoBusca) != 1) {
+    limparEntrada();
+    printf("\nO codigo deve ser um numero inteiro.\n");
+    return;
+}
+limparEntrada();
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
@@ -174,13 +220,23 @@ int totalProdutos = 0;
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para atualizar o estoque: ");
-        scanf("%d", &codigoBusca);
+        if (scanf("%d", &codigoBusca) != 1) {
+    limparEntrada();
+    printf("\nO codigo deve ser um numero inteiro.\n");
+    return;
+}
+limparEntrada();
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
                 printf("Quantidade atual: %d\n", produtos[i].quantidade);
                 printf("Digite a nova quantidade: ");
-                scanf("%d", &novaQuantidade);
+                if (scanf("%d", &novaQuantidade) != 1) {
+    limparEntrada();
+    printf("\nA quantidade deve ser um numero inteiro.\n");
+    return;
+}
+limparEntrada();
 
                 if (novaQuantidade < 0) {
                     printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
@@ -212,16 +268,26 @@ int totalProdutos = 0;
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para registrar a entrada: ");
-        scanf("%d", &codigoBusca);
+        if (scanf("%d", &codigoBusca) != 1) {
+            limparEntrada();
+            printf("\nO codigo deve ser um numero inteiro.\n");
+            return;
+        }
+        limparEntrada();
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
                 printf("Quantidade atual: %d\n", produtos[i].quantidade);
                 printf("Digite a quantidade de entrada: ");
-                scanf("%d", &quantidadeEntrada);
+                if (scanf("%d", &quantidadeEntrada) != 1) {
+                    limparEntrada();
+                    printf("\nA quantidade deve ser um numero inteiro.\n");
+                    return;
+                }
+                limparEntrada();
 
-                if (quantidadeEntrada < 0) {
-                    printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
+                if (quantidadeEntrada <= 0) {
+                    printf("\nQuantidade invalida. A entrada deve ser maior que zero.\n");
                 } else {
                     produtos[i].quantidade += quantidadeEntrada;
                     movimentacoes[i][ENTRADAS] += quantidadeEntrada;
@@ -251,16 +317,26 @@ int totalProdutos = 0;
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para registrar a saida: ");
-        scanf("%d", &codigoBusca);
+        if (scanf("%d", &codigoBusca) != 1) {
+            limparEntrada();
+            printf("\nO codigo deve ser um numero inteiro.\n");
+            return;
+        }
+        limparEntrada();
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
                 printf("Quantidade atual: %d\n", produtos[i].quantidade);
                 printf("Digite a quantidade de saida: ");
-                scanf("%d", &quantidadeSaida);
+                if (scanf("%d", &quantidadeSaida) != 1) {
+                    limparEntrada();
+                    printf("\nA quantidade deve ser um numero inteiro.\n");
+                    return;
+                }
+                limparEntrada();
 
                 if (quantidadeSaida <= 0) {
-                    printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
+                    printf("\nQuantidade invalida. A saida deve ser maior que zero.\n");
                 } else if (quantidadeSaida > produtos[i].quantidade) {
                     printf("\nQuantidade insuficiente em estoque. Estoque atual: %d\n", produtos[i].quantidade);
                 } else {
@@ -373,6 +449,13 @@ int totalProdutos = 0;
         fclose(arquivo);
         printf("\nProdutos carregados: %d.\n", totalProdutos);
     }
+    void limparEntrada() {
+    int caractere;
+
+    while ((caractere = getchar()) != '\n' && caractere != EOF) {
+        /* Descarta os caracteres restantes da linha. */
+    }
+}
 
 
 
