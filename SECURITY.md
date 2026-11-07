@@ -1,21 +1,24 @@
-# Security Policy
+# Política de Segurança
 
-## Supported Versions
+## Versões com suporte
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Este é um projeto acadêmico sem versões numeradas. A versão mantida é a branch `main`; não há prazo garantido para correções.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Versão | Suporte |
+| --- | --- |
+| `main` | Melhorias e correções quando possível |
+| Outras versões ou cópias antigas | Sem suporte |
 
-## Reporting a Vulnerability
+## Como relatar uma vulnerabilidade
 
-Use this section to tell people how to report a vulnerability.
+Não publique detalhes de uma vulnerabilidade, dados pessoais, credenciais ou informações reais do estoque em uma issue pública.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Se a opção estiver disponível, use **Report a vulnerability** na aba **Security** deste repositório para enviar o relato de forma privada. Se essa opção não aparecer, entre em contato com o responsável pelo projeto pelo [perfil no GitHub](https://github.com/Newlas07).
+
+Inclua uma descrição do problema, os passos para reproduzi-lo, a versão ou commit afetado e o impacto observado. Use somente dados fictícios nos exemplos. Não há prazo fixo para resposta ou correção.
+
+## Limitações deste projeto
+
+Este sistema de estoque em C foi feito para fins acadêmicos e não é recomendado para uso comercial ou produção. Ele não possui autenticação nem permissões por usuário.
+
+O arquivo `produtos.txt` guarda os dados em texto simples, sem criptografia. Não armazene nele senhas, dados pessoais ou informações confidenciais, e não envie ao repositório cópias com dados reais do estoque.
