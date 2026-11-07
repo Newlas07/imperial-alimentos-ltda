@@ -1,8 +1,18 @@
- #include <stdio.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #define MAX_PRODUTOS 100
 #define ENTRADAS 0
 #define SAIDAS 1
+#define TAMANHO_LINHA 256
 
 typedef struct {
     int codigo;
@@ -25,8 +35,15 @@ int totalProdutos = 0;
  void registrarSaida();
  void relatorioEstoque();
  void carregarProdutos();
- void salvarProdutos();
- void limparEntrada();
+ int salvarProdutos(void);
+ int lerLinha(FILE *entrada, char *linha, size_t tamanho);
+ int lerInteiro(int *valor);
+ int lerPreco(float *valor);
+ int lerNome(char nome[], size_t tamanho);
+ int converterInteiro(const char *texto, int *valor);
+ int converterPreco(const char *texto, float *valor);
+ int lerCampoInteiro(char **cursor, char separador, long *valor);
+ int lerCampoPreco(char **cursor, char separador, float *valor);
 
  /* Algoritmo principal: exibe o menu repetidamente e chama a funcao escolhida. */
  int main() {
@@ -52,14 +69,15 @@ int totalProdutos = 0;
         printf("\n0  -    Sair");
 
         printf("\n\nEscolha uma opcao: ");
-        if (scanf("%d", &opcao) != 1) {
-    limparEntrada();
-    printf("\nDigite uma opcao usando numeros.\n");
-    opcao = -1;
-    continue;
-}
-
-limparEntrada();
+        if (!lerInteiro(&opcao)) {
+            if (feof(stdin)) {
+                printf("\nEntrada encerrada.\n");
+                break;
+            }
+            printf("\nDigite uma opcao usando numeros inteiros.\n");
+            opcao = -1;
+            continue;
+        }
 
         switch (opcao) {
             case 1:
@@ -107,12 +125,10 @@ limparEntrada();
         Produto *produto = &produtos[totalProdutos];
 
         printf("\nCodigo: ");
-        if (scanf("%d", &produto->codigo) != 1) {
-    limparEntrada();
-    printf("\no codigo deve ser um numero inteiro.\n");
-    return;
-}
-limparEntrada();
+        if (!lerInteiro(&produto->codigo)) {
+            printf("\nO codigo deve ser um numero inteiro valido.\n");
+            return;
+        }
         if (produto->codigo <= 0) {
             printf("\nO codigo deve ser maior que zero.\n");
             return;
@@ -125,34 +141,37 @@ limparEntrada();
 }
 
         printf("Nome: ");
-        scanf(" %49[^\n]", produto->nome);
+        if (!lerNome(produto->nome, sizeof(produto->nome))) {
+            printf("\nNome invalido ou muito longo (maximo de 49 caracteres).\n");
+            return;
+        }
 
         printf("Quantidade: ");
-        if (scanf("%d", &produto->quantidade) != 1) {
-    limparEntrada();
-    printf("\na quantidade deve ser um numero inteiro.\n");
-    return;
-}
-limparEntrada();
+        if (!lerInteiro(&produto->quantidade)) {
+            printf("\nA quantidade deve ser um numero inteiro valido.\n");
+            return;
+        }
         if (produto->quantidade < 0) {
     printf("\nA quantidade nao pode ser negativa.\n");
     return;
 }
 
         printf("Preco: ");
-        if (scanf("%f", &produto->preco) != 1) {
-    limparEntrada();
-    printf("\no preco deve ser um numero.\n");
-    return;
-}
-limparEntrada();
+        if (!lerPreco(&produto->preco)) {
+            printf("\nO preco deve ser um numero decimal valido.\n");
+            return;
+        }
         if (produto->preco < 0) {
     printf("\nO preco nao pode ser negativo.\n");
     return;
 }
 
         totalProdutos++;
-        salvarProdutos();
+        if (!salvarProdutos()) {
+            totalProdutos--;
+            printf("\nCadastro cancelado porque os dados nao foram salvos.\n");
+            return;
+        }
 
         printf("\nProduto cadastrado com sucesso!\n");
     }
@@ -185,12 +204,10 @@ limparEntrada();
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para consulta: ");
-        if (scanf("%d", &codigoBusca) != 1) {
-    limparEntrada();
-    printf("\nO codigo deve ser um numero inteiro.\n");
-    return;
-}
-limparEntrada();
+        if (!lerInteiro(&codigoBusca)) {
+            printf("\nO codigo deve ser um numero inteiro valido.\n");
+            return;
+        }
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
@@ -220,30 +237,31 @@ limparEntrada();
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para atualizar o estoque: ");
-        if (scanf("%d", &codigoBusca) != 1) {
-    limparEntrada();
-    printf("\nO codigo deve ser um numero inteiro.\n");
-    return;
-}
-limparEntrada();
+        if (!lerInteiro(&codigoBusca)) {
+            printf("\nO codigo deve ser um numero inteiro valido.\n");
+            return;
+        }
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
                 printf("Quantidade atual: %d\n", produtos[i].quantidade);
                 printf("Digite a nova quantidade: ");
-                if (scanf("%d", &novaQuantidade) != 1) {
-    limparEntrada();
-    printf("\nA quantidade deve ser um numero inteiro.\n");
-    return;
-}
-limparEntrada();
+                if (!lerInteiro(&novaQuantidade)) {
+                    printf("\nA quantidade deve ser um numero inteiro valido.\n");
+                    return;
+                }
 
                 if (novaQuantidade < 0) {
                     printf("\nQuantidade invalida. A quantidade nao pode ser negativa.\n");
                 } else {
+                    int quantidadeAnterior = produtos[i].quantidade;
                     produtos[i].quantidade = novaQuantidade;
-                    salvarProdutos();
-                    printf("\nEstoque atualizado com sucesso!\n");
+                    if (!salvarProdutos()) {
+                        produtos[i].quantidade = quantidadeAnterior;
+                        printf("\nAtualizacao cancelada; o estoque anterior foi restaurado.\n");
+                    } else {
+                        printf("\nEstoque atualizado com sucesso!\n");
+                    }
                 }
                 encontrado = 1;
                 break;
@@ -268,32 +286,35 @@ limparEntrada();
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para registrar a entrada: ");
-        if (scanf("%d", &codigoBusca) != 1) {
-            limparEntrada();
-            printf("\nO codigo deve ser um numero inteiro.\n");
+        if (!lerInteiro(&codigoBusca)) {
+            printf("\nO codigo deve ser um numero inteiro valido.\n");
             return;
         }
-        limparEntrada();
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
                 printf("Quantidade atual: %d\n", produtos[i].quantidade);
                 printf("Digite a quantidade de entrada: ");
-                if (scanf("%d", &quantidadeEntrada) != 1) {
-                    limparEntrada();
-                    printf("\nA quantidade deve ser um numero inteiro.\n");
+                if (!lerInteiro(&quantidadeEntrada)) {
+                    printf("\nA quantidade deve ser um numero inteiro valido.\n");
                     return;
                 }
-                limparEntrada();
 
                 if (quantidadeEntrada <= 0) {
                     printf("\nQuantidade invalida. A entrada deve ser maior que zero.\n");
+                } else if (quantidadeEntrada > INT_MAX - produtos[i].quantidade ||
+                           quantidadeEntrada > INT_MAX - movimentacoes[i][ENTRADAS]) {
+                    printf("\nA entrada ultrapassa o limite de quantidade permitido.\n");
                 } else {
                     produtos[i].quantidade += quantidadeEntrada;
                     movimentacoes[i][ENTRADAS] += quantidadeEntrada;
-                    salvarProdutos();
-                    printf("\nEntrada registrada com sucesso!. Novo Estoque: %d\n", produtos[i].quantidade);
-                    
+                    if (!salvarProdutos()) {
+                        produtos[i].quantidade -= quantidadeEntrada;
+                        movimentacoes[i][ENTRADAS] -= quantidadeEntrada;
+                        printf("\nEntrada cancelada; os valores anteriores foram restaurados.\n");
+                    } else {
+                        printf("\nEntrada registrada com sucesso. Novo estoque: %d\n", produtos[i].quantidade);
+                    }
                 }
                 encontrado = 1;
                 break;
@@ -317,33 +338,36 @@ limparEntrada();
         int encontrado = 0;
 
         printf("\nDigite o codigo do produto para registrar a saida: ");
-        if (scanf("%d", &codigoBusca) != 1) {
-            limparEntrada();
-            printf("\nO codigo deve ser um numero inteiro.\n");
+        if (!lerInteiro(&codigoBusca)) {
+            printf("\nO codigo deve ser um numero inteiro valido.\n");
             return;
         }
-        limparEntrada();
 
         for (int i = 0; i < totalProdutos; i++) {
             if (produtos[i].codigo == codigoBusca) {
                 printf("Quantidade atual: %d\n", produtos[i].quantidade);
                 printf("Digite a quantidade de saida: ");
-                if (scanf("%d", &quantidadeSaida) != 1) {
-                    limparEntrada();
-                    printf("\nA quantidade deve ser um numero inteiro.\n");
+                if (!lerInteiro(&quantidadeSaida)) {
+                    printf("\nA quantidade deve ser um numero inteiro valido.\n");
                     return;
                 }
-                limparEntrada();
 
                 if (quantidadeSaida <= 0) {
                     printf("\nQuantidade invalida. A saida deve ser maior que zero.\n");
                 } else if (quantidadeSaida > produtos[i].quantidade) {
                     printf("\nQuantidade insuficiente em estoque. Estoque atual: %d\n", produtos[i].quantidade);
+                } else if (quantidadeSaida > INT_MAX - movimentacoes[i][SAIDAS]) {
+                    printf("\nO total de saidas ultrapassaria o limite permitido.\n");
                 } else {
                     produtos[i].quantidade -= quantidadeSaida;
                     movimentacoes[i][SAIDAS] += quantidadeSaida;
-                    salvarProdutos();
-                    printf("\nSaida registrada com sucesso!. Novo Estoque: %d\n", produtos[i].quantidade);
+                    if (!salvarProdutos()) {
+                        produtos[i].quantidade += quantidadeSaida;
+                        movimentacoes[i][SAIDAS] -= quantidadeSaida;
+                        printf("\nSaida cancelada; os valores anteriores foram restaurados.\n");
+                    } else {
+                        printf("\nSaida registrada com sucesso. Novo estoque: %d\n", produtos[i].quantidade);
+                    }
                 }
                 encontrado = 1;
                 break;
@@ -362,8 +386,8 @@ limparEntrada();
             return;
         }
 
-        int totalUnidades = 0;
-        float valorTotalEstoque = 0.0;
+        long long totalUnidades = 0;
+        double valorTotalEstoque = 0.0;
 
         printf("\n=== Relatorio de Estoque ===\n");
 
@@ -376,86 +400,275 @@ limparEntrada();
             printf("Total de saidas registradas: %d\n", movimentacoes[i][SAIDAS]);
 
             totalUnidades += produtos[i].quantidade;
-            valorTotalEstoque += produtos[i].quantidade * produtos[i].preco;
+            valorTotalEstoque += (double)produtos[i].quantidade * (double)produtos[i].preco;
         }
         printf("\nTipos de produtos cadastrados: %d\n", totalProdutos);
-        printf("Total de unidades em estoque: %d\n", totalUnidades);
+        printf("Total de unidades em estoque: %lld\n", totalUnidades);
         printf("Valor total do estoque: R$ %.2f\n", valorTotalEstoque);
         
     }
 
-    void salvarProdutos() {
-        FILE *arquivo = fopen("produtos.txt", "w");
-        
+    int salvarProdutos(void) {
+        const char *arquivoTemporario = "produtos.tmp";
+        FILE *arquivo = fopen(arquivoTemporario, "w");
+
         if (arquivo == NULL) {
-            printf("\nErro ao salvar os produtos.\n");
-            return;
+            printf("\nErro: nao foi possivel criar o arquivo temporario.\n");
+            return 0;
         }
 
-        fprintf(arquivo, "%d\n", totalProdutos);
+        int sucesso = fprintf(arquivo, "%d\n", totalProdutos) >= 0;
 
-        for (int i =0; i < totalProdutos; i++) {
-            fprintf(arquivo, "%d;%d;%.2f;%d,%d;%s\n",
-                produtos[i].codigo,
-                produtos[i].quantidade,
-                produtos[i].preco,
-                movimentacoes[i][ENTRADAS],
-                movimentacoes[i][SAIDAS],
-                produtos[i].nome);
-        }        
+        for (int i = 0; sucesso && i < totalProdutos; i++) {
+            sucesso = fprintf(arquivo, "%d;%d;%.9g;%d,%d;%s\n",
+                              produtos[i].codigo,
+                              produtos[i].quantidade,
+                              (double)produtos[i].preco,
+                              movimentacoes[i][ENTRADAS],
+                              movimentacoes[i][SAIDAS],
+                              produtos[i].nome) >= 0;
+        }
 
-        fclose(arquivo);
-        printf("\nDados salvos no arquivo produtos.txt.\n");
+        if (ferror(arquivo)) {
+            sucesso = 0;
+        }
+        if (fclose(arquivo) != 0) {
+            sucesso = 0;
+        }
+
+        if (!sucesso) {
+            remove(arquivoTemporario);
+            printf("\nErro ao gravar os dados. O arquivo anterior foi mantido.\n");
+            return 0;
+        }
+
+#ifdef _WIN32
+        if (!MoveFileExA(arquivoTemporario, "produtos.txt",
+                         MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+#else
+        if (rename(arquivoTemporario, "produtos.txt") != 0) {
+#endif
+            remove(arquivoTemporario);
+            printf("\nErro ao substituir produtos.txt. O arquivo anterior foi mantido.\n");
+            return 0;
+        }
+
+        printf("\nDados salvos com seguranca em produtos.txt.\n");
+        return 1;
     }
+
     void carregarProdutos() {
         FILE *arquivo = fopen("produtos.txt", "r");
-        
-        /* Na primeira execucao, o arquivo nao existe */
+
+        /* Na primeira execucao, o arquivo ainda nao existe. */
         if (arquivo == NULL) {
+            totalProdutos = 0;
             return;
         }
 
+        char linha[TAMANHO_LINHA];
         int quantidadeLida;
-
-        if (fscanf(arquivo, "%d", &quantidadeLida)!= 1) {
-            fclose(arquivo);
-            return;
-        }
-
-        if (quantidadeLida < 0) {
-           quantidadeLida = 0;
-        }
-        if (quantidadeLida > MAX_PRODUTOS) {
-            quantidadeLida = MAX_PRODUTOS;
-        }
-
+        Produto produtosLidos[MAX_PRODUTOS];
+        int movimentacoesLidas[MAX_PRODUTOS][2] = {{0}};
+        int arquivoValido = 1;
         totalProdutos = 0;
 
-        for (int i = 0; i < quantidadeLida; i++) {
-            int resultado = fscanf(arquivo, "%d;%d;%f;%d,%d;%49[^\n]",
-                &produtos[i].codigo,
-                &produtos[i].quantidade,
-                &produtos[i].preco,
-                &movimentacoes[i][ENTRADAS],
-                &movimentacoes[i][SAIDAS],
-                produtos[i].nome);
-             if (resultado != 6) {
-                break;
-             }
-
-            totalProdutos++;
+        if (!lerLinha(arquivo, linha, sizeof(linha)) ||
+            !converterInteiro(linha, &quantidadeLida) ||
+            quantidadeLida < 0 || quantidadeLida > MAX_PRODUTOS) {
+            arquivoValido = 0;
         }
 
-        fclose(arquivo);
+        for (int i = 0; arquivoValido && i < quantidadeLida; i++) {
+            long codigo, quantidade, entradas, saidas;
+            float preco;
+            char *cursor;
+
+            if (!lerLinha(arquivo, linha, sizeof(linha))) {
+                arquivoValido = 0;
+                break;
+            }
+
+            cursor = linha;
+            if (!lerCampoInteiro(&cursor, ';', &codigo) ||
+                !lerCampoInteiro(&cursor, ';', &quantidade) ||
+                !lerCampoPreco(&cursor, ';', &preco) ||
+                !lerCampoInteiro(&cursor, ',', &entradas) ||
+                !lerCampoInteiro(&cursor, ';', &saidas)) {
+                arquivoValido = 0;
+                break;
+            }
+
+            size_t tamanhoNome = strlen(cursor);
+            if (codigo <= 0 || codigo > INT_MAX ||
+                quantidade < 0 || quantidade > INT_MAX ||
+                entradas < 0 || entradas > INT_MAX ||
+                saidas < 0 || saidas > INT_MAX ||
+                preco < 0 || !isfinite(preco) ||
+                tamanhoNome == 0 || tamanhoNome >= sizeof(produtosLidos[i].nome)) {
+                arquivoValido = 0;
+                break;
+            }
+
+            for (int j = 0; j < i; j++) {
+                if (produtosLidos[j].codigo == (int)codigo) {
+                    arquivoValido = 0;
+                    break;
+                }
+            }
+            if (!arquivoValido) {
+                break;
+            }
+
+            produtosLidos[i].codigo = (int)codigo;
+            produtosLidos[i].quantidade = (int)quantidade;
+            produtosLidos[i].preco = preco;
+            movimentacoesLidas[i][ENTRADAS] = (int)entradas;
+            movimentacoesLidas[i][SAIDAS] = (int)saidas;
+            memcpy(produtosLidos[i].nome, cursor, tamanhoNome + 1);
+        }
+
+        /* Recusa qualquer conteudo extra nao vazio ao final do arquivo. */
+        while (arquivoValido && fgets(linha, sizeof(linha), arquivo) != NULL) {
+            for (char *p = linha; *p != '\0'; p++) {
+                if (!isspace((unsigned char)*p)) {
+                    arquivoValido = 0;
+                    break;
+                }
+            }
+        }
+        if (ferror(arquivo)) {
+            arquivoValido = 0;
+        }
+        if (fclose(arquivo) != 0) {
+            arquivoValido = 0;
+        }
+
+        if (!arquivoValido) {
+            printf("\nArquivo produtos.txt invalido ou corrompido. Nenhum produto foi carregado.\n");
+            return;
+        }
+
+        for (int i = 0; i < quantidadeLida; i++) {
+            produtos[i] = produtosLidos[i];
+            movimentacoes[i][ENTRADAS] = movimentacoesLidas[i][ENTRADAS];
+            movimentacoes[i][SAIDAS] = movimentacoesLidas[i][SAIDAS];
+        }
+        totalProdutos = quantidadeLida;
         printf("\nProdutos carregados: %d.\n", totalProdutos);
     }
-    void limparEntrada() {
-    int caractere;
 
-    while ((caractere = getchar()) != '\n' && caractere != EOF) {
-        /* Descarta os caracteres restantes da linha. */
+    int lerLinha(FILE *entrada, char *linha, size_t tamanho) {
+        if (fgets(linha, (int)tamanho, entrada) == NULL) {
+            return 0;
+        }
+
+        size_t comprimento = strlen(linha);
+        if (comprimento > 0 && linha[comprimento - 1] == '\n') {
+            linha[--comprimento] = '\0';
+        } else if (!feof(entrada)) {
+            int caractere;
+            while ((caractere = fgetc(entrada)) != '\n' && caractere != EOF) {
+                /* Descarta o restante de uma linha grande demais. */
+            }
+            return 0;
+        }
+
+        if (comprimento > 0 && linha[comprimento - 1] == '\r') {
+            linha[comprimento - 1] = '\0';
+        }
+        return 1;
     }
-}
+
+    int converterInteiro(const char *texto, int *valor) {
+        char *fim;
+        errno = 0;
+        long valorLido = strtol(texto, &fim, 10);
+
+        if (fim == texto) {
+            return 0;
+        }
+        while (isspace((unsigned char)*fim)) {
+            fim++;
+        }
+        if (*fim != '\0' || errno == ERANGE ||
+            valorLido < INT_MIN || valorLido > INT_MAX) {
+            return 0;
+        }
+
+        *valor = (int)valorLido;
+        return 1;
+    }
+
+    int converterPreco(const char *texto, float *valor) {
+        char *fim;
+        errno = 0;
+        float valorLido = strtof(texto, &fim);
+
+        if (fim == texto) {
+            return 0;
+        }
+        while (isspace((unsigned char)*fim)) {
+            fim++;
+        }
+        if (*fim != '\0' || errno == ERANGE || !isfinite(valorLido)) {
+            return 0;
+        }
+
+        *valor = valorLido;
+        return 1;
+    }
+
+    int lerInteiro(int *valor) {
+        char linha[128];
+        return lerLinha(stdin, linha, sizeof(linha)) && converterInteiro(linha, valor);
+    }
+
+    int lerPreco(float *valor) {
+        char linha[128];
+        return lerLinha(stdin, linha, sizeof(linha)) && converterPreco(linha, valor);
+    }
+
+    int lerNome(char nome[], size_t tamanho) {
+        char linha[128];
+        if (!lerLinha(stdin, linha, sizeof(linha))) {
+            return 0;
+        }
+
+        size_t comprimento = strlen(linha);
+        if (comprimento == 0 || comprimento >= tamanho) {
+            return 0;
+        }
+
+        memcpy(nome, linha, comprimento + 1);
+        return 1;
+    }
+
+    int lerCampoInteiro(char **cursor, char separador, long *valor) {
+        char *fim;
+        errno = 0;
+        long valorLido = strtol(*cursor, &fim, 10);
+        if (*cursor == fim || errno == ERANGE || *fim != separador) {
+            return 0;
+        }
+
+        *valor = valorLido;
+        *cursor = fim + 1;
+        return 1;
+    }
+
+    int lerCampoPreco(char **cursor, char separador, float *valor) {
+        char *fim;
+        errno = 0;
+        float valorLido = strtof(*cursor, &fim);
+        if (*cursor == fim || errno == ERANGE || !isfinite(valorLido) || *fim != separador) {
+            return 0;
+        }
+
+        *valor = valorLido;
+        *cursor = fim + 1;
+        return 1;
+    }
 
 
 
